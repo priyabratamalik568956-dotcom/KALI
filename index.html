@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMM Panel Live Orders Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Define the neon colors and shadow */
+        :root {
+            --neon-blue: #00ffff;
+            --neon-pink: #ff00ff;
+            --neon-green: #00ff80;
+            --bg-color: #0d1117;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--neon-blue);
+            font-family: 'Orbitron', sans-serif;
+            /* Prevents horizontal scrolling caused by layout issues */
+            overflow-x: hidden; 
+        }
+
+        .neon-glow-text {
+            text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue), 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .neon-border-blue {
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 5px var(--neon-blue), 0 0 15px rgba(0, 255, 255, 0.4);
+        }
+
+        .neon-pink-bg {
+            background-color: rgba(255, 0, 255, 0.1);
+            box-shadow: 0 0 5px var(--neon-pink), 0 0 10px rgba(255, 0, 255, 0.3);
+        }
+
+        .neon-green-text {
+            color: var(--neon-green);
+            text-shadow: 0 0 3px var(--neon-green);
+        }
+
+        .neon-red-text {
+            color: #ff4d4d;
+            text-shadow: 0 0 3px #ff4d4d;
+        }
+
+        /* Animation for new orders */
+        @keyframes fadeInSlide {
+            0% { opacity: 0; transform: translateY(-20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .new-order-row {
+            animation: fadeInSlide 0.5s ease-out;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <h1 class="text-4xl md:text-5xl text-center mb-10 tracking-wider neon-glow-text">
+        <span class="text-white">LIVE</span> SMM <span class="text-pink-500">DASHBOARD</span>
+    </h1>
+
+    <!-- STATS PANEL - MODIFIED FOR MOBILE --><div id="stats-panel" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <!-- Total Orders --><div class="p-4 rounded-xl neon-border-blue bg-gray-900/50 text-center">
+            <p class="text-sm uppercase opacity-70 mb-1">Total Orders</p>
+            <!-- Font size is now smaller on mobile (text-2xl) --><p id="total-orders" class="text-2xl sm:text-3xl md:text-4xl font-bold text-white neon-glow-text">0</p>
+        </div>
+
+        <!-- Completed --><div class="p-4 rounded-xl neon-border-blue bg-gray-900/50 text-center">
+            <p class="text-sm uppercase opacity-70 mb-1">Completed</p>
+            <p id="total-completed" class="text-2xl sm:text-3xl md:text-4xl font-bold neon-green-text">0</p>
+        </div>
+
+        <!-- Failed --><div class="p-4 rounded-xl neon-border-blue bg-gray-900/50 text-center">
+            <p class="text-sm uppercase opacity-70 mb-1">Failed</p>
+            <p id="total-failed" class="text-2xl sm:text-3xl md:text-4xl font-bold neon-red-text">0</p>
+        </div>
+
+        <!-- Total Revenue --><div class="p-4 rounded-xl neon-border-blue bg-gray-900/50 text-center">
+            <p class="text-sm uppercase opacity-70 mb-1">Total Revenue</p>
+            <p id="total-revenue" class="text-2xl sm:text-3xl md:text-4xl font-bold text-yellow-400 neon-glow-text">₹ 0</p>
+        </div>
+    </div>
+
+    <!-- LIVE ORDERS LIST --><h2 class="text-2xl md:text-3xl mb-4 mt-10 neon-glow-text">
+        <span class="text-pink-500">//</span> Live Feed
+    </h2>
+
+    <div class="bg-gray-900/70 p-4 md:p-6 rounded-xl neon-border-blue max-h-[60vh] overflow-y-auto">
+        <!-- Table Header - MODIFIED FOR MOBILE --><div class="grid grid-cols-12 text-xs md:text-sm font-semibold mb-3 pb-2 border-b border-gray-700/50 uppercase opacity-80">
+            <div class="col-span-2 sm:col-span-1 flex items-center">User</div> <!-- Changed from hidden md:block --><div class="col-span-3 sm:col-span-3">Service</div> <!-- Adjusted col-span --><div class="col-span-2 sm:col-span-2">Amount</div> <!-- Adjusted col-span --><div class="col-span-2 sm:col-span-2 text-right">Cost (₹)</div> <!-- Adjusted col-span --><div class="col-span-3 sm:col-span-4 text-center">Status</div> <!-- Adjusted col-span --></div>
+
+        <!-- Orders will be prepended here --><div id="orders-container" class="space-y-3">
+            <!-- Order Rows --></div>
+    </div>
+
+    <script>
+        // Global State
+        let stats = {
+            totalOrders: 23541,
+            completed: 23102,
+            failed: 439,
+            revenue: 1256789.50
+        };
+
+        const services = [
+            { name: "Instagram Followers", price: 0.85, platform: "IG" },
+             { name: "TikTok Views (HQ)", price: 0.15, platform: "TT" },
+            { name: "YouTube Subscribers", price: 5.20, platform: "YT" },
+            { name: "Ig Story Views (HQ)", price: 0.15, platform: "TT" },
+            { name: "YouTube Likes", price: 5.20, platform: "YT" },
+            { name: "Spotify Streams", price: 0.08, platform: "SP" },
+            { name: "Discord Server Join", price: 1.50, platform: "DC" },
+            { name: "Website Traffic (GEO)", price: 0.25, platform: "WEB" },
+            { name: "Instagram Views (GEO)", price: 0.25, platform: "WEB" },
+         ];
+        const usernames = [
+            "CipherBlade", "NeonViper", "AstroFlux", "PixelGhost", "TechNova",
+            "DataStream", "CyberPunk", "ElectroWave", "ZenithCode", "Hyperion",
+            "RogueBit", "VoidRunner", "GammaRay", "PhantomIO", "BlazeKira"
+        ];
+
+        // --- Utility Functions ---
+
+        /** Creates a simple oscillator sound for the completion effect */
+        function playCompletionSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const audioCtx = new AudioContext();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                // Set up sound parameters (a high, short beep)
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
+                gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+
+                // Connect nodes
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                // Start and stop after a brief moment
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                oscillator.stop(audioCtx.currentTime + 0.3);
+            } catch (e) {
+                console.error("Audio playback failed (browser restrictions or error):", e);
+                // Continue execution without sound if failed
+            }
+        }
+
+        /** Formats number to currency with two decimal places */
+        function formatCurrency(number) {
+            return `₹ ${number.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+        }
+
+        /** Updates the statistic elements in the DOM */
+        function updateStatsDOM() {
+            document.getElementById('total-orders').textContent = stats.totalOrders.toLocaleString();
+            document.getElementById('total-completed').textContent = stats.completed.toLocaleString();
+            document.getElementById('total-failed').textContent = stats.failed.toLocaleString();
+            document.getElementById('total-revenue').textContent = formatCurrency(stats.revenue);
+        }
+
+        /** Generates a random new order object */
+        function generateOrder() {
+            const service = services[Math.floor(Math.random() * services.length)];
+            const username = usernames[Math.floor(Math.random() * usernames.length)];
+            const quantity = Math.floor(Math.random() * 900) + 100; // 100 to 1000
+            const cost = quantity * service.price;
+            const status = 'Processing';
+            const id = Math.random().toString(36).substring(2, 9);
+
+            return { id, username, service, quantity, cost, status };
+        }
+
+        /** Creates and prepends the HTML row for a new order */
+        function addOrderToDOM(order) {
+            const container = document.getElementById('orders-container');
+            const row = document.createElement('div');
+            row.id = `order-${order.id}`;
+            row.className = 'new-order-row grid grid-cols-12 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/50 transition-all duration-300'; // text-xs for mobile
+            row.setAttribute('data-cost', order.cost);
+            row.setAttribute('data-id', order.id);
+
+            const avatarUrl = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${order.username}&size=30`;
+
+            row.innerHTML = `
+                <!-- Avatar - Now visible on mobile --><div class="col-span-2 sm:col-span-1 flex items-center">
+                    <img src="${avatarUrl}" alt="Avatar" class="w-7 h-7 rounded-full mr-1 neon-border-blue p-[1px]">
+                    <span class="text-gray-400 truncate hidden sm:block">@${order.username}</span> <!-- Username hidden on very small screens --></div>
+                <!-- Service / Target --><div class="col-span-3 sm:col-span-3 truncate flex items-center">
+                    <span class="bg-pink-700/50 text-pink-300 px-1 py-0.5 rounded-full text-[9px] mr-1 hidden xs:inline">${order.service.platform}</span> <!-- Smaller padding, font for tiny screens -->${order.service.name.split(' ')[0]}... <!-- Shorten service name for mobile --></div>
+                <!-- Amount --><div class="col-span-2 sm:col-span-2 flex items-center">${order.quantity.toLocaleString()}</div>
+                <!-- Cost --><div class="col-span-2 sm:col-span-2 text-right flex items-center justify-end font-mono text-yellow-300">${formatCurrency(order.cost)}</div>
+                <!-- Status --><div class="col-span-3 sm:col-span-4 text-center flex items-center justify-center">
+                    <span class="status-badge bg-yellow-900 text-yellow-400 px-2 py-0.5 rounded-full text-[9px] animate-pulse">Processing</span> <!-- Smaller padding, font for tiny screens --></div>
+            `;
+
+            container.prepend(row);
+            // Limit to 15 orders in the feed for performance and readability
+            while (container.children.length > 15) {
+                container.removeChild(container.lastChild);
+            }
+
+            // Immediately increment initial stats
+            stats.totalOrders += 1;
+            stats.revenue += order.cost;
+            updateStatsDOM();
+
+            // Set a timeout to process the order later
+            const processTime = Math.random() * 10000 + 5000; // 5 to 15 seconds
+            setTimeout(() => processOrder(row, order), processTime);
+        }
+
+        /** Updates an order's status and global stats */
+        function processOrder(rowElement, order) {
+            if (!rowElement) return; // In case the element was removed due to limit
+
+            const isSuccess = Math.random() > 0.15; // 85% success rate
+            const statusBadge = rowElement.querySelector('.status-badge');
+            const cost = parseFloat(rowElement.getAttribute('data-cost'));
+
+            if (isSuccess) {
+                // Success
+                stats.completed += 1;
+                statusBadge.textContent = 'Completed';
+                statusBadge.className = 'status-badge bg-green-900 text-white neon-green-text px-2 py-0.5 rounded-full text-[9px] font-bold';
+                playCompletionSound();
+            } else {
+                // Failure
+                stats.failed += 1;
+                // Revert revenue for failed orders (optional, but realistic)
+                stats.revenue -= cost;
+                statusBadge.textContent = 'Failed';
+                statusBadge.className = 'status-badge bg-red-900 text-white neon-red-text px-2 py-0.5 rounded-full text-[9px] font-bold';
+            }
+
+            // Update stats panel
+            updateStatsDOM();
+
+            // Clean up animation class
+            rowElement.classList.remove('new-order-row');
+        }
+
+
+        // --- Simulation Control ---
+
+        function startSimulation() {
+            // Initial stats display
+            updateStatsDOM();
+
+            // Set up recurring order generation
+            const intervalDuration = 2000; // Add a new order every 2 seconds
+            setInterval(() => {
+                const newOrder = generateOrder();
+                addOrderToDOM(newOrder);
+            }, intervalDuration);
+
+            // Seed the initial feed with 5 orders
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => addOrderToDOM(generateOrder()), i * 1000);
+            }
+        }
+
+        // Initialize the simulation when the window loads
+        window.onload = startSimulation;
+
+    </script>
+</body>
+</html>
